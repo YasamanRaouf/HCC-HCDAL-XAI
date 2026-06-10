@@ -1,21 +1,25 @@
-# data.py
-
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 
-def load_data(path="hcc_dataset.csv"):
-    df = pd.read_csv(path)
+def load_data(path="Data/hcc-data-complete-balanced.csv"):
+    df = pd.read_csv(path)  # standard comma separator
 
-    X = df.drop("Class", axis=1).values
-    y = df["Class"].values
+    for col in df.columns:
+        df[col] = pd.to_numeric(
+            df[col].astype(str).str.replace(',', '.', regex=False),
+            errors='coerce'
+        )
 
-    # missing values
-    X = pd.DataFrame(X).fillna(np.nanmean(X, axis=0)).values
+    X = df.drop("Class", axis=1).values.astype(float)
+    y = df["Class"].values.astype(int)
 
-    # Min-Max normalization
+    col_means = np.nanmean(X, axis=0)
+    inds = np.where(np.isnan(X))
+    X[inds] = np.take(col_means, inds[1])
+
     scaler = MinMaxScaler()
     X = scaler.fit_transform(X)
 
