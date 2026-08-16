@@ -26,7 +26,7 @@ NUM_CLIENTS = 2
 NUM_ROUNDS = 10
 LOCAL_EPOCHS = 5
 ENCODING_DIM = 32
-USE_NON_IID = False  # flip to True once the IID run is confirmed working
+USE_NON_IID = True  # flip to True once the IID run is confirmed working
 
 
 def weighted_average(metrics):
