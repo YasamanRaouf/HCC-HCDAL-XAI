@@ -1,7 +1,7 @@
 """
 hcc_client.py
 
-Week 2, Phase 1 -- Real HCC federated client.
+Week 2-4, Phase 1 -- Real HCC federated client.
 
 Federates SAE + GRU only (Keras models whose weights FedAvg can average).
 DBN (BernoulliRBM + LogisticRegression, from models.py) is trained locally
@@ -16,7 +16,16 @@ set (X_test/y_test, held out by data_loader.load_data()) is shared across
 clients for evaluation ONLY -- this is standard practice for measuring the
 federated model's generalization and is not a leak, since no client's
 fit() ever sees it.
+
+Week 4 addition: differential privacy (clip + noise) is applied to each
+client's local update INSIDE fit(), right before the parameters are
+returned to the server -- see dp_utils.py for the mechanism and its scope
+limitations (no formal epsilon accounting yet). fit() also times local
+training and measures the size (in bytes) of what gets sent back, for the
+communication-overhead / training-time metrics required by the plan.
 """
+
+import time
 
 import numpy as np
 import flwr as fl
@@ -26,6 +35,7 @@ from federated_models import (
     local_finetune_sae, local_finetune_gru,
 )
 from models import train_dbn
+from dp_utils import apply_dp, total_bytes
 
 
 def get_combined_weights(autoencoder, gru_model):
@@ -42,7 +52,8 @@ def set_combined_weights(autoencoder, gru_model, parameters):
 
 class HCCClient(fl.client.NumPyClient):
     def __init__(self, client_id, X_train, y_train, X_test, y_test,
-                 encoding_dim=32, local_epochs=5):
+                 encoding_dim=32, local_epochs=5,
+                 dp_enabled=False, clip_norm=1.0, noise_multiplier=0.0):
         self.client_id = client_id
         self.X_train = X_train
         self.y_train = y_train
@@ -51,6 +62,13 @@ class HCCClient(fl.client.NumPyClient):
         self.encoding_dim = encoding_dim
         self.local_epochs = local_epochs
         self.input_dim = X_train.shape[1]
+
+        # Differential privacy config (see dp_utils.py). dp_enabled=False
+        # reproduces exactly Week 2/3's behavior (no clipping, no noise) --
+        # this is the "no-DP control" condition for comparison.
+        self.dp_enabled = dp_enabled
+        self.clip_norm = clip_norm
+        self.noise_multiplier = noise_multiplier
 
         # Build (untrained) architectures once; weights get overwritten by
         # the server's global parameters at the start of every fit()/evaluate().
@@ -64,6 +82,12 @@ class HCCClient(fl.client.NumPyClient):
         return get_combined_weights(self.autoencoder, self.gru)
 
     def fit(self, parameters, config):
+        server_round = config.get("server_round", 0)
+        t_start = time.time()
+
+        # Keep a copy of the INCOMING global weights -- this is "old_params"
+        # for the DP update-clipping step below (update = new - old).
+        old_params = [p.copy() for p in parameters]
         set_combined_weights(self.autoencoder, self.gru, parameters)
 
         # A FEW local epochs per round (fine-tuning from the current global
@@ -79,8 +103,39 @@ class HCCClient(fl.client.NumPyClient):
         # flow), but never sent to the server.
         self.local_dbn = train_dbn(X_train_encoded, self.y_train)
 
+        new_params = get_combined_weights(self.autoencoder, self.gru)
+
+        if self.dp_enabled:
+            # Different seed per (client, round) so noise isn't identical
+            # across clients or repeated every round.
+            dp_seed = hash((self.client_id, server_round)) % (2**31)
+            protected_params, pre_clip_norm = apply_dp(
+                old_params, new_params,
+                clip_norm=self.clip_norm,
+                noise_multiplier=self.noise_multiplier,
+                seed=dp_seed,
+            )
+        else:
+            protected_params, pre_clip_norm = new_params, None
+
+        elapsed = time.time() - t_start
+        n_bytes = total_bytes(protected_params)
+        clip_msg = f", pre-clip update norm={pre_clip_norm:.4f}" if pre_clip_norm is not None else ""
+        print(
+            f"[Client {self.client_id}] fit() round {server_round} -> "
+            f"{elapsed:.2f}s local training, {n_bytes / 1024:.1f} KB to send"
+            f"{clip_msg}"
+        )
+
         num_examples = len(self.X_train)
-        return get_combined_weights(self.autoencoder, self.gru), num_examples, {}
+        metrics = {
+            "train_time_sec": elapsed,
+            "bytes_sent": n_bytes,
+        }
+        if pre_clip_norm is not None:
+            metrics["pre_clip_update_norm"] = pre_clip_norm
+
+        return protected_params, num_examples, metrics
 
     def evaluate(self, parameters, config):
         set_combined_weights(self.autoencoder, self.gru, parameters)
