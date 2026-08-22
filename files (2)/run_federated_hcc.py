@@ -37,7 +37,7 @@ NUM_CLIENTS = 2
 NUM_ROUNDS = 10
 LOCAL_EPOCHS = 5
 ENCODING_DIM = 32
-USE_NON_IID = False  # flip to True once the IID run is confirmed working
+USE_NON_IID = os.environ.get("USE_NON_IID", "0") == "1"
 
 # --- Differential privacy (Week 4) ---
 # DP_ENABLED=False -> exactly Week 2/3 behavior (no-DP control run).
@@ -45,9 +45,13 @@ USE_NON_IID = False  # flip to True once the IID run is confirmed working
 # Gaussian noise with std = NOISE_MULTIPLIER * CLIP_NORM before sending it
 # to the server. See dp_utils.py for the mechanism and its scope (no formal
 # epsilon accounting yet -- report results in terms of these two knobs).
-DP_ENABLED = False
-CLIP_NORM = 1.0
-NOISE_MULTIPLIER = 0.1
+#
+# All three can be overridden via environment variables, so a shell loop
+# can sweep settings without editing this file each time, e.g.:
+#   DP_ENABLED=1 NOISE_MULTIPLIER=0.3 python run_federated_hcc.py
+DP_ENABLED = os.environ.get("DP_ENABLED", "0") == "1"
+CLIP_NORM = float(os.environ.get("CLIP_NORM", "1.0"))
+NOISE_MULTIPLIER = float(os.environ.get("NOISE_MULTIPLIER", "0.1"))
 
 RESULTS_CSV = "results/fl_metrics.csv"
 
