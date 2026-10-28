@@ -1,0 +1,5 @@
+metric,none_mean_over_repeats,ctgan_mean_over_repeats,diff_ctgan_minus_none,boot_ci_low,boot_ci_high,ci_level,n_boot,note
+accuracy,0.6799999999999999,0.663030303030303,-0.016969696969696968,-0.053333333333333344,0.020606060606060517,0.95,10000,"paired patient-level bootstrap; descriptive, no hypothesis test"
+mcc,0.30259750017470194,0.29461794991710966,-0.007979550257592283,-0.0826406610124219,0.06754994791734048,0.95,10000,"paired patient-level bootstrap; descriptive, no hypothesis test"
+recall_dies,0.49523809523809526,0.5873015873015872,0.09206349206349196,0.025806451612903288,0.15745003223726622,0.95,10000,"paired patient-level bootstrap; descriptive, no hypothesis test"
+recall_lives,0.7941176470588236,0.7098039215686275,-0.08431372549019611,-0.12293577981651371,-0.04727068437180786,0.95,10000,"paired patient-level bootstrap; descriptive, no hypothesis test"

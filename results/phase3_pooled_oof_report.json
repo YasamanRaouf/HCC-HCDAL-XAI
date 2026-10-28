@@ -1,0 +1,65 @@
+{
+  "generated_at": "2026-10-19T11:05:51",
+  "script": "analyze_pooled_oof.py",
+  "environment": {
+    "python": "3.9.6",
+    "numpy": "2.0.2",
+    "pandas": "2.3.3"
+  },
+  "no_hypothesis_tests_and_no_p_values": true,
+  "settings": {
+    "scenarios": [
+      "none",
+      "ctgan"
+    ],
+    "n_repeats": 5,
+    "n_splits": 5,
+    "decision_threshold": 0.5,
+    "bootstrap_seed": 42,
+    "n_boot": 10000,
+    "ci_level": 0.95,
+    "positive_class_for_recall_and_mcc": "Dies (class 0)",
+    "point_estimate": "mean over the 5 repeat-level pooled out-of-fold metrics",
+    "interval": "paired cluster (patient) bootstrap, percentile"
+  },
+  "inputs": {
+    "none": {
+      "folds_csv": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_none_folds.csv",
+      "shap_oof_jsonl": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_none_shap_oof.jsonl",
+      "n_csv_rows": 25,
+      "n_valid_folds": 25,
+      "n_prediction_records_used": 825,
+      "n_prediction_records_of_invalid_folds_excluded": 0,
+      "n_patients": 165
+    },
+    "ctgan": {
+      "folds_csv": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_ctgan_folds.csv",
+      "shap_oof_jsonl": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_ctgan_shap_oof.jsonl",
+      "n_csv_rows": 25,
+      "n_valid_folds": 25,
+      "n_prediction_records_used": 825,
+      "n_prediction_records_of_invalid_folds_excluded": 0,
+      "n_patients": 165
+    }
+  },
+  "integrity_checks_passed": [
+    "folds CSV: 25 valid folds (non-null accuracy), unique split indices, repeat/fold consistent, scenario correct",
+    "predictions: no duplicate (split, patient); per fold the record count equals n_val and the Dies count equals n_dies_val",
+    "classes in {0, 1}; pred_proba finite in [0, 1]",
+    "every patient exactly once per repeat; same patients and classes in every repeat and in both scenarios",
+    "pooled accuracy and pooled recall(Dies) of every repeat reproduce the fold-size-weighted CSV values to 1e-9"
+  ],
+  "limitations": [
+    "The independent units are the 165 patients (63 Dies, 102 Lives). The 5 repeats re-train models on heavily overlapping data and re-predict the same patients; averaging over repeats reduces training randomness but does not add patients.",
+    "The bootstrap resamples PATIENTS and keeps each repeat's trained models fixed. The interval therefore reflects patient (case-mix) sampling uncertainty only; it does not include variability from re-training on different training sets. The SD over the 5 repeat values describes that variation descriptively only (the 5 repeats are not independent).",
+    "No hypothesis test and no p-value is computed. An interval that excludes zero is not, by itself, evidence of superiority: four metrics are reported, the direction of the fold-level means was seen before this analysis, and the comparison must be described as exploratory unless it was pre-specified.",
+    "Pooled per-repeat metrics use all 165 out-of-fold predictions of a repeat (each from one of 5 different fold models), so they differ from the fold-level means in the folds CSV. Accuracy and recall(Dies) are reconciled against the CSV exactly; MCC and recall(Lives) are not stored there and cannot be reconciled.",
+    "The decision threshold is the pipeline's own 0.5. Only the scenarios 'none' and 'ctgan' exist in Phase 3 (SMOTE variants were evaluated only in Phase 2)."
+  ],
+  "outputs": [
+    "phase3_pooled_oof_per_repeat.csv",
+    "phase3_pooled_oof_summary.csv",
+    "phase3_pooled_oof_comparison.csv",
+    "phase3_pooled_oof_report.json"
+  ]
+}

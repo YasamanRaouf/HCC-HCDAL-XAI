@@ -1,0 +1,82 @@
+{
+  "generated_at": "2026-10-14T15:35:13",
+  "script": "compute_reliability_metrics.py",
+  "environment": {
+    "python": "3.9.6",
+    "numpy": "2.0.2",
+    "pandas": "2.3.3",
+    "scipy": "1.13.1"
+  },
+  "no_hypothesis_tests_and_no_p_values": true,
+  "design": {
+    "scenarios": [
+      "none",
+      "ctgan"
+    ],
+    "n_repeats": 5,
+    "n_splits_per_repeat": 5,
+    "valid_fold_rule": "non-null accuracy in folds CSV (status column is not used)",
+    "stability": "nearest same-class neighbor inside the same repeat (49-feature global similarity vector, Euclidean, ties -> lowest patient id), self excluded; Euclidean distance between 49-dim SHAP vectors; per-repeat median; mean +/- sample SD (ddof=1) over 5 repeat medians; random same-class same-repeat reference with fixed seed",
+    "random_reference_seed": 42,
+    "generalizability": "Spearman rho between fold mean(|SHAP|) rankings in the 49-feature space (0 for unselected features, average ranks for ties)",
+    "consistency": "existing consistency_pearson_r per fold; negative values kept"
+  },
+  "inputs": {
+    "none": {
+      "folds_csv": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_none_folds.csv",
+      "rankings_jsonl": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_none_rankings.jsonl",
+      "shap_oof_jsonl": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_none_shap_oof.jsonl",
+      "n_csv_rows": 25,
+      "n_valid_folds": 25,
+      "n_csv_rows_without_accuracy_excluded": 0,
+      "n_ranking_records": 25,
+      "n_ranking_records_of_invalid_folds_excluded": 0,
+      "n_oof_records": 825,
+      "n_oof_records_of_invalid_folds_excluded": 0,
+      "n_oof_records_used": 825,
+      "n_patients_per_repeat": 165
+    },
+    "ctgan": {
+      "folds_csv": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_ctgan_folds.csv",
+      "rankings_jsonl": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_ctgan_rankings.jsonl",
+      "shap_oof_jsonl": "/Users/yasaman/master_thesis_HCC/HepatocellularCarcinomaDet/results/phase3_ctgan_shap_oof.jsonl",
+      "n_csv_rows": 25,
+      "n_valid_folds": 25,
+      "n_csv_rows_without_accuracy_excluded": 0,
+      "n_ranking_records": 25,
+      "n_ranking_records_of_invalid_folds_excluded": 0,
+      "n_oof_records": 825,
+      "n_oof_records_of_invalid_folds_excluded": 0,
+      "n_oof_records_used": 825,
+      "n_patients_per_repeat": 165
+    }
+  },
+  "integrity_checks_passed": [
+    "folds CSV: columns present, one valid row per split 0..24, repeat/fold consistent with split_index, scenario column correct",
+    "rankings.jsonl: exactly one record per valid fold, feature names known and unique, values finite and non-negative",
+    "shap_oof.jsonl: no duplicate (split, patient); n records per fold equals n_val; classes in {0,1}",
+    "shap_values_full49 equals shap_values mapped through the 49-feature order for every record",
+    "selected_features identical in rankings.jsonl and shap_oof.jsonl for every fold",
+    "mean(|SHAP|) recomputed from shap_oof.jsonl matches rankings.jsonl for every fold",
+    "each patient appears exactly once per repeat; same patient set in every repeat",
+    "each patient has one class label and one similarity vector across all records",
+    "both scenarios cover the same patients with the same classes and similarity vectors"
+  ],
+  "limitations": [
+    "The 5 repeats are NOT independent: every repeat re-partitions the same 165 patients, each patient is out-of-fold once per repeat, and training sets overlap heavily across folds and repeats. The SD over the 5 repeat-level values only describes variation between re-partitionings; it is not a standard error or a confidence interval, and n = 5 is small.",
+    "Per-patient distances are saved for descriptive plots only. They are not independent observations (a patient appears in every repeat, one patient can be the neighbor of several patients, and distances within a repeat share fold models). No hypothesis test or p-value is computed on them.",
+    "Stability neighbors are searched inside a repeat but across folds, as in the approved design: a patient and its neighbor may be explained by DIFFERENT fold models, so SHAP distance mixes patient dissimilarity with model-to-model variation. The fraction of same-fold pairs is reported (frac_*_same_fold) for both the nearest and the random reference.",
+    "The distances are proximity in a fixed 49-feature min-max-scaled space (global-mean imputation, all features weighted equally, binary and continuous mixed, no clinical weighting, no clinician validation) and Euclidean distance between SHAP vectors (unselected features = 0). They are statistical proxies, NOT established clinical similarity. The similarity embedding was fit on all 165 patients; it is used only to pick which pairs to compare after the fact and never affected training or any performance number.",
+    "Generalizability compares fold-level mean(|SHAP|) rankings with ties (unselected features share the zero rank). A fold takes part in 24 pairs and folds share most of their training data, so pair values are not independent; their spread is descriptive only.",
+    "Consistency is a per-fold Pearson r between mean(|SHAP|) and permutation feature importance computed on only about 33 out-of-fold patients (about 12 Dies), so it is noisy. Negative values are kept. Fold values are not independent.",
+    "The `status` column of the current folds CSVs is NaN; valid folds are identified by non-null `accuracy`.",
+    "Random-reference pairs use a fixed seed (42) per repeat and are identical in both scenarios, so the nearest-vs-random contrast is the same construction in both scenarios."
+  ],
+  "outputs": [
+    "phase3_reliability_per_repeat.csv",
+    "phase3_reliability_summary.csv",
+    "phase3_stability_patient_distances.csv",
+    "phase3_generalizability_pairs.csv",
+    "phase3_reliability_report.json"
+  ]
+}

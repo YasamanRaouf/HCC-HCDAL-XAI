@@ -1,0 +1,133 @@
+{
+  "started_at": "2026-09-28T20:25:37",
+  "design": {
+    "cv": "RepeatedStratifiedKFold(n_splits=5, n_repeats=5, random_state=42)",
+    "pilot_split_index": 0,
+    "explainer": "shap.PermutationExplainer",
+    "background": "shap.kmeans(X_train, 20).data (centroids snapped to observed values)",
+    "n_permutations_per_sample": 10,
+    "scenario": "none (no augmentation)"
+  },
+  "timings_sec": {
+    "train_sae": 44.818839250001474,
+    "train_gru": 23.707099957999162,
+    "train_dbn": 0.03598091699677752,
+    "shap_full_fold": 5.408498624998174
+  },
+  "memory_mb": {
+    "after_imports": null,
+    "after_training": null,
+    "peak_after_training": 593.068032,
+    "after_shap": null,
+    "final": null,
+    "peak_overall": 716.210176
+  },
+  "warnings": {
+    "[train_gru] UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the mode": 1
+  },
+  "errors": [],
+  "environment": {
+    "python": "3.10.20",
+    "conda_env": "hcc_thesis",
+    "platform": "macOS-14.6-arm64-arm-64bit",
+    "tensorflow": "2.16.2",
+    "keras": "3.12.2",
+    "sklearn": "1.7.2",
+    "shap": "0.49.1",
+    "numpy": "1.26.4",
+    "pandas": "2.3.3",
+    "tf_devices": [
+      "/physical_device:CPU:0"
+    ],
+    "notes": []
+  },
+  "fold": {
+    "split_index": 0,
+    "n_total_splits": 25,
+    "n_train": 132,
+    "n_dies_train": 51,
+    "n_val": 33,
+    "n_dies_val": 12,
+    "n_selected_features": 30,
+    "selected_features": [
+      "Gender",
+      "Symptoms",
+      "HBsAg",
+      "Smoking",
+      "Diabetes",
+      "CRI",
+      "NASH",
+      "Varices",
+      "Spleno",
+      "PHT",
+      "PVT",
+      "Packs_year",
+      "PS",
+      "Encephalopathy",
+      "Ascites",
+      "AFP",
+      "Hemoglobin",
+      "MCV",
+      "Albumin",
+      "AST",
+      "GGT",
+      "ALP",
+      "TP",
+      "Creatinine",
+      "Nodules",
+      "Major_Dim",
+      "Dir_Bil",
+      "Iron",
+      "Sat",
+      "Ferritin"
+    ],
+    "w_gru": 1.0,
+    "w_dbn": 0.6136363636363636
+  },
+  "wrapper_check": {
+    "max_abs_diff": 0.0,
+    "ok": true,
+    "fold_accuracy": 0.696969696969697,
+    "fold_mcc": 0.30735042819928804,
+    "fold_recall_dies": 0.4166666666666667
+  },
+  "shap": {
+    "max_evals_per_sample": 610,
+    "n_background": 20,
+    "warmup": {
+      "n_samples": 2,
+      "seconds": 2.524059542000032,
+      "sec_per_sample": 1.262029771000016,
+      "model_calls": 21,
+      "model_rows": 19645,
+      "projected_fold_seconds": 41.646982443000525
+    },
+    "full_fold": {
+      "n_samples": 33,
+      "seconds": 5.408498624998174,
+      "sec_per_sample": 0.16389389772721738,
+      "model_calls": 362,
+      "model_rows": 327999,
+      "theoretical_masked_evals": 20130,
+      "additivity_max_abs_err": 3.3306690738754696e-16,
+      "shap_values_shape": [
+        33,
+        30
+      ],
+      "top5_features": [
+        "Ascites",
+        "Diabetes",
+        "Gender",
+        "ALP",
+        "Albumin"
+      ]
+    }
+  },
+  "projection": {
+    "per_fold_seconds": 73.97041874999559,
+    "none_25_folds_seconds": 1849.2604687498897,
+    "two_scenarios_seconds": 3698.5209374997794,
+    "excludes": "CTGAN training time (not measured by this pilot)"
+  },
+  "finished_at": "2026-09-28T20:26:57"
+}
